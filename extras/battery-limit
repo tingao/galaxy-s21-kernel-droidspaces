@@ -1,0 +1,25 @@
+#!/system/bin/sh
+# battery-limit <percent>   set the charge limit (1-100, 100 = no limit)
+# battery-limit             show the current setting and live battery state
+CONF=/data/adb/battery-limit.conf
+NODE=/sys/class/power_supply/battery/batt_full_capacity
+B=/sys/class/power_supply/battery
+
+V="$1"
+if [ -n "$V" ]; then
+  case "$V" in
+    *[!0-9]*|"") echo "usage: battery-limit <1-100>"; exit 1 ;;
+  esac
+  if [ "$V" -lt 1 ] || [ "$V" -gt 100 ]; then echo "out of range (1-100)"; exit 1; fi
+  printf 'LIMIT=%s\n' "$V" > "$CONF"
+  echo "$V" > "$NODE" 2>/dev/null
+  echo "charge limit set to ${V}%   (node now $(cat "$NODE" 2>/dev/null))"
+fi
+
+LIM=$(grep -oE 'LIMIT=[0-9]+' "$CONF" 2>/dev/null | cut -d= -f2)
+echo "configured limit : ${LIM:-?}%"
+echo "kernel node      : $(cat "$NODE" 2>/dev/null)"
+echo "status           : $(cat "$B/status" 2>/dev/null)"
+echo "capacity         : $(cat "$B/capacity" 2>/dev/null)%"
+echo "current          : $(cat "$B/current_now" 2>/dev/null) mA   (positive = charging)"
+echo "charger          : ac=$(cat /sys/class/power_supply/ac/online 2>/dev/null) usb=$(cat /sys/class/power_supply/usb/online 2>/dev/null)"

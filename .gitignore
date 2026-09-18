@@ -1,0 +1,22 @@
+# Build artefacts -- never commit these
+out/
+build-logs/
+*.o
+*.ko
+*.log
+__pycache__/
+*.pyc
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---------------------------------------------------------------------------
+# OPTIONAL: keep the ~860 MB of binaries OUT of git and publish them as
+# GitHub Release assets instead. Uncomment the two lines below, commit the
+# repo (small and fast to clone), then attach the files to a tagged release.
+# See releases/README.md.
+# ---------------------------------------------------------------------------
+# releases/*.img
+# releases/*.tar
