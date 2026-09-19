@@ -13,6 +13,66 @@ rebooting. Remove by deleting the file and rebooting.
 | `60-battery-limit.sh` | Charge limit using the same mechanism Samsung's own "Battery protection" uses (`batt_full_capacity`), with a watchdog that re-asserts it. | not required by any variant |
 | `battery-limit` | CLI front-end: `battery-limit 40` sets a 40 % cap, `battery-limit` prints state. | companion to the above |
 
+## Raising the GPU floor for compute workloads (LLM inference, and similar)
+
+The profile holds the GPU **ceiling** open but leaves the floor at stock, so the GPU idles down to
+315 MHz. That is the right default for a phone, and the wrong setting for a GPU compute job. Worth
+knowing why before you try to run a model on this device.
+
+**Opening the ceiling is not enough to reach 840 MHz.** Measured here under sustained Vulkan load, with
+`max_pwrlevel` held at 0 for the whole run:
+
+| | |
+|---|---|
+| idle | 315 MHz |
+| sustained load | **443 MHz**, and it never goes higher |
+| throughput at that clock | 215 GFLOPS |
+
+`max_pwrlevel` never moved during that run, so 443 MHz is simply where the `msm-adreno-tz` governor
+settles on its own. It does not ask for more even though 840 MHz is permitted. Nothing in the kernel is
+capping it, so the ceiling is not the lever.
+
+**To get the GPU high you raise the floor.** Levels are indexed upward from the fastest, so 0 is
+840 MHz and 9 is the 315 MHz stock idle floor:
+
+| `min_pwrlevel` | clock | | `min_pwrlevel` | clock |
+|---|---|---|---|---|
+| 0 | 840 MHz | | 5 | 540 MHz |
+| 1 | 778 MHz | | 6 | 491 MHz |
+| 2 | 738 MHz | | 7 | 443 MHz |
+| 3 | 676 MHz | | 8 | 379 MHz |
+| 4 | 608 MHz | | 9 | 315 MHz (stock default) |
+
+Set it through the profile rather than by hand, so it survives a reboot and does not drift:
+
+```sh
+# /data/adb/o1q-perf.conf
+CEIL=85000
+ABORT=95000
+GPU_FLOOR=0        # pin the floor at 840 MHz; 5 for 540 MHz, 3 for 676 MHz
+```
+
+Then restart the profile, or reboot. Delete the `GPU_FLOOR` line to go back to stock behaviour, which
+is the default.
+
+In testing, setting `GPU_FLOOR=0` moved the GPU off the 443 MHz it otherwise settles at, up to
+778 MHz, and the floor permits the top 840 MHz level. A pinned floor also measured **318 GFLOPS**
+against the **215 GFLOPS** above, though those come from separate runs, so treat the gap as indicative
+rather than exact.
+
+The cost is that the floor pins even at idle: the GPU sits at 840 MHz doing nothing, which shows up as
+heat and battery drain with no workload to justify it. For a long inference run that is a fair trade.
+For daily use it is not, which is why it is left unset by default.
+
+Two things to keep in mind for a real workload:
+
+* The profile's `CEIL`/`ABORT` guard still applies. Above 85 °C it stops forcing and hands control back
+  to Samsung's thermal-engine, so a long run will still slow down once the die is properly hot. That is
+  deliberate, and it is the only thing standing between this device and a cooked SoC.
+* Running the model inside a Droidspaces container uses a different GPU path: Mesa Turnip over
+  `/dev/kgsl-3d0` with VirGL off, not the vendor driver. See [variant 2](../variants/02-ksu.md)
+  for what that setup needs.
+
 ## Why the battery limit is worth knowing about
 
 On this device the charge ceiling is a **kernel node**:

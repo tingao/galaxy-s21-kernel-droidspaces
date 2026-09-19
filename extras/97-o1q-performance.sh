@@ -25,6 +25,15 @@
 #   default (315 MHz), so the GPU idles down when nothing wants it and ramps back
 #   up on demand under msm-adreno-tz.
 #
+#   Opening the ceiling alone does NOT reach 840 MHz.  Under sustained load
+#   msm-adreno-tz settles at 443 MHz and never asks for more, even with
+#   max_pwrlevel at 0.  If you need the GPU held high (GPU compute, an LLM,
+#   anything latency bound), set GPU_FLOOR in the config to a pwrlevel index:
+#   0 = 840 MHz, 3 = 676, 5 = 540, 7 = 443, 9 = 315 (the stock default).
+#   Measured: 318 GFLOPS with the floor at 0 versus 215 GFLOPS at the 443 MHz
+#   the governor picks by itself.  Leaving GPU_FLOOR unset keeps stock behaviour,
+#   which is the default because the floor pins even at idle.
+#
 # WHAT THIS DELIBERATELY DOES NOT DO
 #   It never touches kernel thermal trip points.  Those files ARE writable
 #   (rw-r--r-- root) but raising them would remove the last hardware safety net
@@ -32,13 +41,14 @@
 #
 # INSTALL (KernelSU):  cp to /data/adb/service.d/ then reboot
 # REMOVE        :      delete the file and reboot
-# CONFIG        :      /data/adb/o1q-perf.conf  ->  CEIL=85000 ABORT=95000
+# CONFIG        :      /data/adb/o1q-perf.conf  ->  CEIL=85000 ABORT=95000 GPU_FLOOR=
 # ---------------------------------------------------------------------------
 
 CONF=/data/adb/o1q-perf.conf
 [ -f "$CONF" ] && . "$CONF"
 CEIL=${CEIL:-85000}     # stop forcing above this (millidegrees C)
 ABORT=${ABORT:-95000}   # above this, do nothing at all
+GPU_FLOOR=${GPU_FLOOR:-}  # pwrlevel index; empty keeps the stock default floor
 LOG=/data/adb/o1q-perf.log
 
 log(){ echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
@@ -52,7 +62,7 @@ i=0
 while { [ ! -e "$CPU0" ] || [ ! -d /sys/devices/system/cpu/cpu7/cpufreq ]; } && [ "$i" -lt 90 ]; do
   sleep 2; i=$((i+1))
 done
-log "start pid=$$ ceil=$CEIL abort=$ABORT sensors: $CPU0 $CPUSS $GPUSS"
+log "start pid=$$ ceil=$CEIL abort=$ABORT gpu_floor=${GPU_FLOOR:-stock} sensors: $CPU0 $CPUSS $GPUSS"
 
 hwmax(){ cat /sys/devices/system/cpu/cpu$1/cpufreq/cpuinfo_max_freq 2>/dev/null; }
 
@@ -80,13 +90,17 @@ while :; do
       fi
       echo performance > /sys/devices/system/cpu/cpu$c/cpufreq/scaling_governor 2>/dev/null
     done
-    # GPU: hold the ceiling open, do not pin the floor.  Restoring min_pwrlevel to
-    # the stock default lets the GPU fall back to 315 MHz when idle, max_pwrlevel
-    # 0 keeps 840 MHz on the table, and msm-adreno-tz ramps up on demand.
-    dpl=$(cat /sys/class/kgsl/kgsl-3d0/default_pwrlevel 2>/dev/null)
+    # GPU: hold the ceiling open.  The floor is GPU_FLOOR when set, otherwise the
+    # stock default, so out of the box the GPU idles down to 315 MHz instead of
+    # being pinned.  max_pwrlevel 0 keeps 840 MHz on the table for when it is wanted.
+    if [ -n "$GPU_FLOOR" ]; then
+      floor=$GPU_FLOOR
+    else
+      floor=$(cat /sys/class/kgsl/kgsl-3d0/default_pwrlevel 2>/dev/null)
+    fi
     cur=$(cat /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null)
-    if [ -n "$dpl" ] && [ "$cur" != "$dpl" ]; then
-      echo "$dpl" > /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null
+    if [ -n "$floor" ] && [ "$cur" != "$floor" ]; then
+      echo "$floor" > /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null
     fi
     echo 0 > /sys/class/kgsl/kgsl-3d0/max_pwrlevel 2>/dev/null
     echo msm-adreno-tz > /sys/class/kgsl/kgsl-3d0/devfreq/governor 2>/dev/null
