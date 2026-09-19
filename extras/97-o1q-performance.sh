@@ -17,6 +17,14 @@
 #   when it is not.  Above CEIL it stops forcing, so Samsung's thermal-engine and
 #   the in-kernel step_wise limits take back over exactly as stock.
 #
+# GPU POLICY
+#   The CPU side raises the ceiling and also pins the governor to performance,
+#   because thermal-engine was clamping scaling_max_freq.  The GPU is treated
+#   differently: it is allowed to go fast, never forced to.  max_pwrlevel stays
+#   at 0 so 840 MHz is always permitted, while min_pwrlevel is left at the stock
+#   default (315 MHz), so the GPU idles down when nothing wants it and ramps back
+#   up on demand under msm-adreno-tz.
+#
 # WHAT THIS DELIBERATELY DOES NOT DO
 #   It never touches kernel thermal trip points.  Those files ARE writable
 #   (rw-r--r-- root) but raising them would remove the last hardware safety net
@@ -72,8 +80,16 @@ while :; do
       fi
       echo performance > /sys/devices/system/cpu/cpu$c/cpufreq/scaling_governor 2>/dev/null
     done
-    echo 0 > /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null
-    echo performance > /sys/class/kgsl/kgsl-3d0/devfreq/governor 2>/dev/null
+    # GPU: hold the ceiling open, do not pin the floor.  Restoring min_pwrlevel to
+    # the stock default lets the GPU fall back to 315 MHz when idle, max_pwrlevel
+    # 0 keeps 840 MHz on the table, and msm-adreno-tz ramps up on demand.
+    dpl=$(cat /sys/class/kgsl/kgsl-3d0/default_pwrlevel 2>/dev/null)
+    cur=$(cat /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null)
+    if [ -n "$dpl" ] && [ "$cur" != "$dpl" ]; then
+      echo "$dpl" > /sys/class/kgsl/kgsl-3d0/min_pwrlevel 2>/dev/null
+    fi
+    echo 0 > /sys/class/kgsl/kgsl-3d0/max_pwrlevel 2>/dev/null
+    echo msm-adreno-tz > /sys/class/kgsl/kgsl-3d0/devfreq/governor 2>/dev/null
   fi
   sleep 5
 done

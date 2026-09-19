@@ -131,8 +131,10 @@ this repository. The essential rules, if you want to reproduce or extend them:
 
 1. Set clocks to a defined state, and **cool to a measured idle baseline before every test**.
 2. **Interleave the levels inside each round**, and **alternate the order**, or use a Latin square.
-3. Pin the GPU explicitly (`min_pwrlevel 0`, not just the `performance` governor; the governor alone
-   gave 154 GFLOPS vs 318 GFLOPS pinned).
+3. For comparable numbers, pin the GPU explicitly (`min_pwrlevel 0`, not just the `performance`
+   governor; the governor alone gave 154 GFLOPS vs 318 GFLOPS pinned). That is a measurement choice,
+   not the shipped policy: the profile deliberately does not pin, it holds the ceiling open and lets
+   the GPU idle down between bursts.
 4. Sample `gpuclk` continuously. **`gpu_busy_percentage` reads 0 % under Vulkan compute** on this
    device even at full load, so do not use it as a load signal. `devfreq/cur_freq` is also
    unreliable; read `/sys/class/kgsl/kgsl-3d0/gpuclk`.

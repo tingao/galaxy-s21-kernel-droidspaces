@@ -88,7 +88,9 @@ KernelSU service script that:
 * re-asserts `scaling_max_freq = cpuinfo_max_freq` on all three clusters, undoing thermal-engine's
   early caps;
 * sets the `performance` governor on every cluster;
-* pins the GPU with `min_pwrlevel 0` and the `performance` devfreq governor;
+* holds the GPU ceiling open (`max_pwrlevel 0`, so the full 840 MHz is always permitted) under the
+  `msm-adreno-tz` scaling governor, and leaves the floor at the stock default, so the GPU still idles
+  down to 315 MHz when nothing wants it. It is allowed to go fast, not forced to stay there;
 * **stands down above a configurable ceiling** (default 85 °C), at which point Samsung's
   thermal-engine and the in-kernel limits take back over exactly as stock.
 

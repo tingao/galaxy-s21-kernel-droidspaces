@@ -9,7 +9,7 @@ rebooting. Remove by deleting the file and rebooting.
 
 | file | what it does | referenced by |
 |---|---|---|
-| `97-o1q-performance.sh` | The performance profile: re-asserts maximum CPU/GPU clocks while the die is cool, stands down above a ceiling. **This is the thing that makes variant 3 fast**. The kernel change alone barely matters. | [variant 3](../variants/03-ksu-perf.md) |
+| `97-o1q-performance.sh` | The performance profile: re-asserts maximum CPU clocks and holds the GPU ceiling open while the die is cool, stands down above a ceiling. The GPU is allowed to reach 840 MHz, not forced to stay there. **This is the thing that makes variant 3 fast**. The kernel change alone barely matters. | [variant 3](../variants/03-ksu-perf.md) |
 | `60-battery-limit.sh` | Charge limit using the same mechanism Samsung's own "Battery protection" uses (`batt_full_capacity`), with a watchdog that re-asserts it. | not required by any variant |
 | `battery-limit` | CLI front-end: `battery-limit 40` sets a 40 % cap, `battery-limit` prints state. | companion to the above |
 
