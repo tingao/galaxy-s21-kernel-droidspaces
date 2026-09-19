@@ -29,7 +29,7 @@ variant 1 builds clean and passes static checks.
 
 ## Why this kernel exists
 
-A kernel you build yourself for this device does not boot usefully out of the box. Two problems had
+A kernel build for this device does not boot usefully out of the box. Two problems had
 to be solved:
 
 1. The SoC dies silently. Samsung's FASTUH RKP (Realtime Kernel Protection) and KDP (Kernel Data
