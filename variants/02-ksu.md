@@ -96,7 +96,9 @@ Requires Samsung's source, see [../SOURCE.md](../SOURCE.md).
 
 ## What this variant does not fix
 
-Sustained performance on this device is limited by user-space thermal throttling rather than by the
-kernel. The GPU drops from 840 MHz to 443 MHz (52.7 % of commanded) and the prime core averages about
-57 % of its commanded clock under sustained load. This kernel behaves the same way, because Samsung's
-own thermal-engine is doing the throttling. See [variant 3](03-ksu-perf.md) if you want that relaxed.
+Sustained performance on this device is limited by user space rather than by the kernel. Under
+sustained load the prime core averages about 57 % of its commanded clock, because Samsung's
+thermal-engine writes `scaling_max_freq` down. The GPU is limited differently: it settles at 443 MHz
+out of the 840 MHz the ceiling permits, and that one is the `msm-adreno-tz` governor's own steady
+state rather than a thermal cap, since `max_pwrlevel` never moves. This kernel behaves the same way.
+See [variant 3](03-ksu-perf.md) if you want that relaxed.

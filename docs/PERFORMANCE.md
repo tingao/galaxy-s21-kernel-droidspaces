@@ -77,7 +77,7 @@ benchmark on this device is measuring thermals, not containers.
 
 | | |
 |---|---|
-| GPU, commanded 840 MHz | throttles to **443 MHz, 52.7 % of commanded** |
+| GPU, ceiling held open at 840 MHz | settles at **443 MHz, 52.7 % of the permitted clock** |
 | GPU throughput, cool-start vs hot-start | 342 → 202 GFLOPS (−41 %) |
 | Prime core under sustained load | **~57 % of commanded clock** |
 | Sustained vs burst, 8-thread CPU | −21 % |
@@ -88,6 +88,12 @@ benchmark on this device is measuring thermals, not containers.
 entire campaign, so they never engaged. The caps come from **user space**: `thermal-engine` and
 `vendor.samsung.hardware.thermal@1.0-service` watch the `*_usr` zones (dummy 125 °C trip) and write
 `scaling_max_freq` down themselves, early and aggressively.
+
+The GPU is a separate case with a different mechanism. Holding the ceiling open (`max_pwrlevel 0`)
+does **not** get the GPU to 840 MHz: under sustained load it settles at 443 MHz while `max_pwrlevel`
+never moves, so that figure is the `msm-adreno-tz` governor's own steady state rather than a thermal
+cap. Reaching 840 MHz sustained needs the floor pinned (`min_pwrlevel 0`), which also means the GPU
+never idles below 840 MHz.
 
 This is why [variant 3](../variants/03-ksu-perf.md) targets user space instead of clock tables.
 
