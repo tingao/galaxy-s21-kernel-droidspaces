@@ -2,7 +2,7 @@
 
 ## Short version
 
-This repository contains **our changes only**. The Linux kernel base is Samsung's own published
+This repository contains **changes to the kernel only**. The Linux kernel base is Samsung's own published
 source, which you obtain from Samsung. We do not mirror it here.
 
 ```sh
@@ -58,7 +58,7 @@ approach and keeps the GPL obligations straightforward. This repo deliberately t
 
 ## GPLv2 compliance for the prebuilt images
 
-We ship GPLv2 **binaries** (`boot-o1q-*.img`). GPLv2 requires that recipients can get the
+This ships GPLv2 **binaries** (`boot-o1q-*.img`). GPLv2 requires that recipients can get the
 corresponding source. That obligation is met by:
 
 * publishing our complete delta as patches in [`build/patches/`](build/patches/), and
@@ -82,7 +82,7 @@ Build number). A drop from a nearby revision usually applies; a distant one may 
 
 ## Verifying you have the right base
 
-Our patches apply cleanly only to the matching base. After applying them, the build scripts report
+The patches apply cleanly only to the matching base. After applying them, the build scripts report
 the config and the CRC gate. The check that matters:
 
 ```sh
