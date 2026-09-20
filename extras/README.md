@@ -12,6 +12,8 @@ rebooting. Remove by deleting the file and rebooting.
 | `97-o1q-performance.sh` | The performance profile: re-asserts maximum CPU clocks and holds the GPU ceiling open while the die is cool, stands down above a ceiling. The GPU is allowed to reach 840 MHz, not forced to stay there. **This is the thing that makes variant 3 fast**. The kernel change alone barely matters. | [variant 3](../variants/03-ksu-perf.md) |
 | `60-battery-limit.sh` | Charge limit using the same mechanism Samsung's own "Battery protection" uses (`batt_full_capacity`), with a watchdog that re-asserts it. | not required by any variant |
 | `battery-limit` | CLI front-end: `battery-limit 40` sets a 40 % cap, `battery-limit` prints state. | companion to the above |
+| `98-keep-awake.sh` | Holds a kernel wakeup source so the handset stops suspending. Without it this device sleeps constantly, its Broadcom Wi-Fi driver fails to enter suspend cleanly (`dhd_set_suspend lpas failed -23`), the radio stops passing traffic, and a container's Cloudflare connector loses all four QUIC connections until somebody touches the screen. Costs ~1–3 %/h of standby drain, free on a charger. | [docs/KEEP-AWAKE.md](../docs/KEEP-AWAKE.md) |
+| `debloat-apply.sh` + `debloat-list.txt` | Reversible debloat for a headless device: disables Galaxy Store, the software updater, Bixby/AI/AR, games, DeX, telemetry and the preloaded Facebook/Microsoft apps with `pm disable-user`, writing a rollback script first. Keeps GMS/GSF/Play installed (stock One UI needs them) but removes their background run permission. The list also records what is deliberately **kept**. | [docs/KEEP-AWAKE.md](../docs/KEEP-AWAKE.md) |
 
 ## Raising the GPU floor for compute workloads (LLM inference, and similar)
 
