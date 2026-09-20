@@ -65,3 +65,14 @@ Bixby/AI/AR, games, DeX, telemetry and preloaded Facebook/Microsoft apps on a he
 `pm disable-user` (reversible, and it cannot strip a component the device needs to boot), writes a
 rollback script first, and restricts GMS/GSF/Play background activity instead of disabling them, because
 stock One UI expects them present.
+
+## Related: the idle modem
+
+This handset reports `SIM state: ABSENT`, yet the modem is powered. `extras/99-airplane-wifi.sh on` enables
+airplane mode and switches Wi-Fi straight back on — Wi-Fi is unaffected by airplane mode once explicitly
+re-enabled — which removes that drain for nothing.
+
+It runs *on the device* and is self-healing: state is saved first, then it waits up to 60 s for
+association and a successful ping and restores the previous state by itself if Wi-Fi does not come back.
+On a phone nobody is holding, that local revert path is the whole point. `status` prints the current
+picture; `off` undoes it.
