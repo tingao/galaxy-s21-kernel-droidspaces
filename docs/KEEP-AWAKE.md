@@ -76,3 +76,12 @@ It runs *on the device* and is self-healing: state is saved first, then it waits
 association and a successful ping and restores the previous state by itself if Wi-Fi does not come back.
 On a phone nobody is holding, that local revert path is the whole point. `status` prints the current
 picture; `off` undoes it.
+
+The script also removes `wifi` from `airplane_mode_radios`, because airplane mode is configured to cut
+Wi-Fi as well. On LineageOS 18.1 (dream2lte) that combination is enough to leave the handset booting with
+a dead supplicant that cannot be revived without clearing airplane mode and rebooting again; on this stock
+ROM Wi-Fi survived, but the setting is removed here too so the behaviour is the same on both. After
+enabling airplane mode the script re-enables Wi-Fi and calls `cmd wifi set-wifi-enabled enabled`, which
+leaves the persisted state (`wifi_on=2`) that carries across a boot. Verify with a real reboot: this
+handset was cold-booted and came back with airplane mode on, Wi-Fi associated, the container up and the
+tunnel at 4/4.
